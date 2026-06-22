@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       line_items: [
         {
           // Ton ID de prix valide
-          price: "price_1TjBM2EithTro5xbZnZ6wYbl", 
+          price: "prod_UkboJrXrw1tPZV", 
           quantity: 1,
         },
       ],
