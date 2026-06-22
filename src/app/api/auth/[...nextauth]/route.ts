@@ -6,7 +6,6 @@ export const authOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      // 🔒 FORCE GOOGLE À TOUJOURS ENVOYER VERS TON URL FIXE
       authorization: {
         params: {
           redirect_uri: "https://audia-ia.vercel.app/api/auth/callback/google"
@@ -19,8 +18,27 @@ export const authOptions = {
     error: "/",
   },
   secret: process.env.NEXTAUTH_SECRET,
-  // 🔒 FORCE NEXTAUTH À RECONNAÎTRE UNIQUEMENT TON ADRESSE DE PROD
-  useSecureCookies: true,
+  
+  // 🔒 FORCE NEXTAUTH À ACCEPTER TON DOMAINE EN PRODUCTION
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+        domain: '.vercel.app'
+      }
+    }
+  },
+  
+  // 🔒 COUPE LA BOUCLE ET TYPE LES PARAMÈTRES POUR TYPESCRIPT
+  callbacks: {
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+      return "https://audia-ia.vercel.app";
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);
