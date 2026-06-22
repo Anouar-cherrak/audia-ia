@@ -6,6 +6,12 @@ export const authOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          // 🔒 FORCE GOOGLE À TOUJOURS UTILISER L'URL OFFICIELLE
+          redirect_uri: "https://audia-ia.vercel.app/api/auth/callback/google"
+        }
+      }
     }),
   ],
   pages: {
@@ -14,7 +20,6 @@ export const authOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   
-  // On laisse NextAuth gérer les cookies par défaut, mais on verrouille la redirection
   callbacks: {
     async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       return "https://audia-ia.vercel.app";
