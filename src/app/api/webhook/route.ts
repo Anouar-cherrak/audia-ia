@@ -23,24 +23,60 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Cas 1 : L'achat initial de l'abonnement est réussi
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const customerEmail = session.customer_details?.email;
+      const stripeCustomerId = session.customer as string;
 
       if (customerEmail) {
-        // 🔥 C'est ici qu'on passe l'utilisateur en PRO dans ta base
+        // On sauvegarde le stripe_customer_id au passage, ça servira plus tard
+        const { error } = await supabase
+          .from("profiles")
+          .update({ 
+            is_pro: true,
+            stripe_customer_id: stripeCustomerId 
+          })
+          .eq("email", customerEmail);
+
+        if (error) console.error("Erreur Supabase (checkout.completed):", error.message);
+        else console.log(`🚀 Statut PRO activé avec succès pour : ${customerEmail}`);
+      }
+    }
+
+    // Cas 2 : Un paiement mensuel récurrent a réussi (sécurité)
+    if (event.type === "invoice.payment_succeeded") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerEmail = invoice.customer_email;
+
+      if (customerEmail) {
         const { error } = await supabase
           .from("profiles")
           .update({ is_pro: true })
           .eq("email", customerEmail);
 
-        if (error) {
-          console.error("Erreur mise à jour Supabase:", error.message);
-        } else {
-          console.log(`🚀 Statut PRO activé avec succès pour : ${customerEmail}`);
-        }
+        if (error) console.error("Erreur Supabase (invoice.succeeded):", error.message);
       }
     }
+
+    // Cas 3 : L'abonnement est annulé, expiré ou impayé
+    if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const stripeCustomerId = subscription.customer as string;
+
+      // On retrouve l'utilisateur via son ID client Stripe pour lui couper l'accès
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_pro: false })
+        .eq("stripe_customer_id", stripeCustomerId);
+
+      if (error) {
+        console.error("Erreur Supabase (subscription.deleted):", error.message);
+      } else {
+        console.log(`❌ Abonnement résilié. Droits PRO retirés pour le client Stripe : ${stripeCustomerId}`);
+      }
+    }
+
   } catch (dbError: any) {
     console.error("Erreur interne du webhook:", dbError.message);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

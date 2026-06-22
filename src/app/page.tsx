@@ -308,7 +308,12 @@ export default function Home() {
         }),
       });
 
-      if (!res.ok) throw new Error("Erreur serveur.");
+      if (!res.ok) {
+  const errorData = await res.json().catch(() => ({}));
+  const errorMessage = errorData.error || "Erreur interne du serveur.";
+  alert(`Le serveur a planté ! Raison exacte : ${errorMessage}`);
+  throw new Error(errorMessage);
+}
       const data = await res.json();
       
       setChats(prev => prev.map(c => {
@@ -457,7 +462,7 @@ export default function Home() {
 
               {activeSidebarTab === "chat" && (
                 <div className="flex-1 flex flex-col min-h-0 border-t border-border pt-3">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-500 mb-2 px-1">Discussions Récentes</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-500 mb-2 px-1">Discussions Récents</span>
                   <div className="flex-1 overflow-y-auto pr-1 space-y-1 max-h-[220px] md:max-h-[300px]">
                     {chats.map((c) => (
                       <div 
@@ -759,7 +764,7 @@ export default function Home() {
 
                   <div className="grid md:grid-cols-2 gap-6 items-stretch">
                     
-                    {/* PLAN GRATUIT (FREEMIUM AVEC PUBS) */}
+                    {/* PLAN GRATUIT */}
                     <div className="border rounded-xl p-6 flex flex-col justify-between bg-card/60 border-border shadow-sm relative">
                       <div className="space-y-4">
                         <div>
@@ -785,7 +790,7 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* PLAN PREMIUM PRO (STRIPE) */}
+                    {/* PLAN PREMIUM PRO */}
                     <div className="border rounded-xl p-6 flex flex-col justify-between bg-card border-border shadow-md relative ring-1 ring-[var(--accent-tiktok)]/30">
                       <div className="space-y-4">
                         <div>
