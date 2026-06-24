@@ -1,6 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { SupabaseAdapter } from "@auth/supabase-adapter"; // 👈 1. AJOUTE CET IMPORT
+import { SupabaseAdapter } from "@auth/supabase-adapter";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -9,10 +9,12 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  // 👈 2. AJOUTE CE BLOC ADAPTER ICI
+  // @ts-ignore
   adapter: SupabaseAdapter({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!, // Nécessite ta clé secrète de service
+    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    // @ts-ignore
+    schema: "public",
   }),
   pages: {
     signIn: "/",
@@ -25,7 +27,6 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       return "https://audia-ia.vercel.app";
     },
-    // 👈 3. MODIFIE LA SESSION POUR RÉCUPÉRER L'ID DE L'UTILISATEUR
     async session({ session, user }) {
       if (session.user && user) {
         // @ts-ignore
