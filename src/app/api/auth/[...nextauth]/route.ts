@@ -9,12 +9,9 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  // @ts-ignore
   adapter: SupabaseAdapter({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
     secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    // @ts-ignore
-    schema: "public",
   }),
   pages: {
     signIn: "/",
