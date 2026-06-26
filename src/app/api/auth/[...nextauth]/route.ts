@@ -1,6 +1,5 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { SupabaseAdapter } from "@auth/supabase-adapter";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -9,31 +8,25 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  // On passe les options proprement via une fonction pour éviter le bug TypeScript
-  adapter: SupabaseAdapter({
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  }),
   pages: {
     signIn: "/",
     error: "/",
   },
   secret: process.env.NEXTAUTH_SECRET,
+  // Force NextAuth à faire confiance au proxy Vercel pour les cookies HTTPS
   useSecureCookies: true,
   
   callbacks: {
     async redirect({ url, baseUrl }) {
+      // Force le retour strict sur la page d'accueil de production
       return "https://audia-ia.vercel.app";
     },
-    async session({ session, user }) {
-      if (session.user && user) {
-        // @ts-ignore
-        session.user.id = user.id;
-      }
+    async session({ session, token }) {
       return session;
     },
   },
 };
 
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };
