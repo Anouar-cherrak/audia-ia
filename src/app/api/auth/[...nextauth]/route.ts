@@ -19,6 +19,7 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   useSecureCookies: true,
+  
   callbacks: {
     async redirect({ url, baseUrl }) {
       return "https://audia-ia.vercel.app";
@@ -34,4 +35,5 @@ export const authOptions: NextAuthOptions = {
 };
 
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };
