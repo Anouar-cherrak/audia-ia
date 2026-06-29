@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Next.js le trouvera grâce au handler exporté
 import { OpenAI } from "openai";
 import { createClient } from "@supabase/supabase-js";
 
@@ -213,7 +213,7 @@ export async function GET(request: Request) {
       }
     };
 
-    // 6. SÉCURITÉ SUCCESS : On verrouille le quota en mettant à jour `updated_at` (uniquement pour les gratuits)
+    // 6. SÉCURITÉ SUCCESS : On verrouille le quota en mettant à jour updated_at (uniquement pour les gratuits)
     if (!isPro && profile) {
       await supabase
         .from("profiles")
@@ -234,7 +234,6 @@ export async function GET(request: Request) {
   }
 }
 
-// Outils d'aide au reformatage de données (Inchangés)
 function formatNumbers(num: number) {
   if (!num) return "0";
   if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
