@@ -95,6 +95,7 @@ export default function Home() {
 
   // États de l'Abonnement Pro
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -129,13 +130,29 @@ export default function Home() {
     freePlan: "Version Gratuite active",
     proDesc: "Accès total, instantané et sans aucune limite.",
     freeDesc: "Inclus dans l'accès gratuit :",
-    cancelBtn: "Résilier mon Abonnement",
+    cancelBtn: "Gérer / Résilier mon Abonnement",
     noCard: "Aucune carte enregistrée.",
     offerBadge: "OFFRE PREMIUM",
     trialText: "7 Jours d'essai gratuit — Sans engagement",
     memberPro: "Déjà membre Pro (Actif)",
     startTrial: "Lancer mes 7 jours gratuits",
   };
+
+  // 🔄 ÉTAPE CLÉ : Vérifier en temps réel le statut d'abonnement auprès de l'API
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.email) {
+      fetch(`/api/user-status?email=${encodeURIComponent(session.user.email)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.isPro) {
+            setIsSubscribed(true);
+          } else {
+            setIsSubscribed(false);
+          }
+        })
+        .catch((err) => console.error("Erreur lors du check Pro:", err));
+    }
+  }, [status, session?.user?.email]);
 
   // Gestion des changements de session (Connexion / Déconnexion)
   useEffect(() => {
@@ -309,11 +326,11 @@ export default function Home() {
       });
 
       if (!res.ok) {
-  const errorData = await res.json().catch(() => ({}));
-  const errorMessage = errorData.error || "Erreur interne du serveur.";
-  alert(`Le serveur a planté ! Raison exacte : ${errorMessage}`);
-  throw new Error(errorMessage);
-}
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.error || "Erreur interne du serveur.";
+        alert(`Le serveur a planté ! Raison exacte : ${errorMessage}`);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       
       setChats(prev => prev.map(c => {
@@ -399,14 +416,20 @@ export default function Home() {
     await signOut();
   };
 
+  // Redirection vers Stripe pour l'achat OU vers le portail client Stripe pour résilier
   const handleSubscribe = async () => {
     if (!session?.user?.email) {
       alert("Tu dois être connecté pour t'abonner.");
       return;
     }
 
+    setLoadingSubscription(true);
+
     try {
-      const res = await fetch("/api/checkout", {
+      // Si l'utilisateur est déjà abonné, on l'envoie vers le portail de gestion/résiliation
+      const targetApi = isSubscribed ? "/api/customer-portal" : "/api/checkout";
+      
+      const res = await fetch(targetApi, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userEmail: session.user.email }),
@@ -416,11 +439,13 @@ export default function Home() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("Erreur lors de la création de la session de paiement.");
+        alert("Erreur lors de l'accès aux services de facturation.");
       }
     } catch (err) {
       console.error(err);
       alert("Impossible de joindre le serveur de paiement.");
+    } finally {
+      setLoadingSubscription(false);
     }
   };
 
@@ -816,13 +841,21 @@ export default function Home() {
                             <span className="text-xs text-center text-blue-400 font-bold block bg-blue-500/10 py-2 rounded-xl">
                               {t.memberPro}
                             </span>
-                            <button onClick={() => setIsSubscribed(false)} className="w-full py-1.5 text-[9px] font-bold uppercase rounded-lg border border-red-500/30 text-red-500 hover:bg-red-500/5 transition-all">
-                              {t.cancelBtn}
+                            <button 
+                              onClick={handleSubscribe} 
+                              disabled={loadingSubscription}
+                              className="w-full py-1.5 text-[9px] font-bold uppercase rounded-lg border border-red-500/30 text-red-500 hover:bg-red-500/5 transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              {loadingSubscription ? "Chargement..." : t.cancelBtn}
                             </button>
                           </div>
                         ) : (
-                          <button onClick={handleSubscribe} className="w-full py-2.5 text-[10px] font-bold uppercase rounded-xl theme-transition cursor-pointer bg-[var(--accent-tiktok)] text-white hover:opacity-90 shadow-sm active:scale-[0.98]">
-                            {t.startTrial}
+                          <button 
+                            onClick={handleSubscribe} 
+                            disabled={loadingSubscription}
+                            className="w-full py-2.5 text-[10px] font-bold uppercase rounded-xl theme-transition cursor-pointer bg-[var(--accent-tiktok)] text-white hover:opacity-90 shadow-sm active:scale-[0.98] disabled:opacity-50"
+                          >
+                            {loadingSubscription ? "Redirection..." : t.startTrial}
                           </button>
                         )}
                       </div>

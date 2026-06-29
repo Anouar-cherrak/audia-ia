@@ -1,32 +1,23 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
-  pages: {
-    signIn: "/",
-    error: "/",
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-  // Force NextAuth à faire confiance au proxy Vercel pour les cookies HTTPS
-  useSecureCookies: true,
-  
-  callbacks: {
-    async redirect({ url, baseUrl }) {
-      // Force le retour strict sur la page d'accueil de production
-      return "https://audia-ia.vercel.app";
-    },
-    async session({ session, token }) {
-      return session;
-    },
-  },
-};
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-const handler = NextAuth(authOptions);
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const email = searchParams.get("email");
 
-export { handler as GET, handler as POST };
+  if (!email) return NextResponse.json({ isPro: false });
+
+  // On vérifie dans ta table users classique (schéma public)
+  const { data } = await supabase
+    .from("users")
+    .select("is_pro")
+    .eq("email", email)
+    .single();
+
+  return NextResponse.json({ isPro: !!data?.is_pro });
+}
